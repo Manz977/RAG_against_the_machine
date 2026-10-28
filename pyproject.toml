@@ -1,0 +1,34 @@
+[project]
+name = "rag-against-the-machine"
+version = "0.1.0"
+description = "Local retrieval-augmented generation over the supplied vLLM corpus."
+requires-python = ">=3.10"
+dependencies = [
+    "accelerate>=1.12,<2",
+    "fire>=0.7,<0.8",
+    "pydantic>=2.12,<3",
+    "scikit-learn>=1.7.2,<2",  
+    "torch>=2.10,<3",
+    "tqdm>=4.67,<5",
+    "transformers>=4.57.6,<5",  # Includes Qwen3 support (introduced in 4.51).
+]
+
+[dependency-groups]
+dev = [
+    "flake8>=7.3,<8",
+    "mypy>=1.19,<2",
+    "pytest>=8.4,<9",
+    "types-tqdm>=4.67,<5",
+]
+
+[tool.uv]
+package = false
+
+[tool.mypy]
+python_version = "3.10"
+exclude = [
+    '(^|/)(\.git|\.venv|__pycache__|\.cache|\.mypy_cache|\.pytest_cache|\.ruff_cache|\.uv-cache|\.huggingface|\.hf-cache)(/|$)',
+    '^(build|dist|htmlcov|models|output|outputs)/',
+    '^data/(raw|processed|output|search_results|search_results_and_answer)/',
+    '(^|/)[^/]+\.egg-info/',
+]

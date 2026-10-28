@@ -1,0 +1,43 @@
+# Python environments and generated package artifacts
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+
+# Tool and model download caches
+.cache/
+.uv-cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.huggingface/
+.hf-cache/
+.coverage
+.coverage.*
+/htmlcov/
+
+# Supplied corpus, generated index, and pipeline results
+/data/raw/
+/data/processed/
+/data/output/
+/data/search_results/
+/data/search_results_and_answer/
+/output/
+/outputs/
+
+# Local model checkpoints (dependencies alone do not download these)
+/models/
+*.safetensors
+*.gguf
+*.pt
+*.pth
+*.ckpt
+pytorch_model*.bin
+
+# Local credentials and OS metadata
+.env
+.env.*
+!.env.example
+.DS_Store
