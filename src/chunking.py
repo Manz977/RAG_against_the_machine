@@ -2,12 +2,10 @@
 
 from typing import List
 
-from sympy import continued_fraction
-
-
 from .models import DocumentChunk, MinimalSource
 
 import re
+import ast
 
 
 def _create_chunk(
@@ -19,27 +17,21 @@ def _create_chunk(
 ) -> DocumentChunk:
     """Create a document chunk for a validated character range."""
     if max_chunk_size <= 0:
-        raise ValueError("A max size of zero or less is invalid.")
+        raise ValueError("max_chunk_size must be greater than 0.")
 
     if start < 0:
-        raise ValueError("The start position is in the negative.")
+        raise ValueError("start must be non-negative.")
 
     if end > len(original_text):
         raise ValueError(
-            "The end position of the text is greater than the original text."
+            "end must not exceed the length of original_text."
         )
 
     if end <= start:
-        raise ValueError(
-            "The end position shouldn't be less than or equal to the start "
-            "position."
-        )
+        raise ValueError("end must be greater than start.")
 
     if (end - start) > max_chunk_size:
-        raise ValueError(
-            "The end minus the start shouldn't be greater than the max "
-            "chunk/character count"
-        )
+        raise ValueError("end - start must not exceed max_chunk_size.")
     # Here we are slicing the text.
     passage_text = original_text[start:end]
 
@@ -58,13 +50,12 @@ def chunk_markdown(
     file_path: str,
     max_chunk_size: int = 2000,
 ) -> List[DocumentChunk]:
+    """Split Markdown into size-limited chunks while preserving sections."""
     if max_chunk_size <= 0:
-        raise ValueError(
-            "The chunk size shouldn't be zero or a negative number."
-        )
+        raise ValueError("max_chunk_size must be greater than 0.")
 
     if not file_path:
-        raise ValueError("File path is empty, provide or check the file path.")
+        raise ValueError("file_path must not be empty.")
 
     if not original_text:
         return []
@@ -104,29 +95,80 @@ def chunk_markdown(
             chunks.append(chunk)
         else:
             current_start = section_start
-#string.rfind(value, start, end)
+
             while section_end - current_start > max_chunk_size:
                 furthest_allowed_position = current_start + max_chunk_size
-                paragraph_boundary = original_text.rfind("\n\n", current_start, furthest_allowed_position)
-                if paragraph_boundary != -1: 
+                paragraph_boundary = original_text.rfind(
+                    "\n\n", current_start, furthest_allowed_position
+                )
+                if paragraph_boundary != -1:
                     split_end = paragraph_boundary + 2
                 else:
-                    one_line = original_text.rfind("\n", current_start,
-                    furthest_allowed_position)
+                    one_line = original_text.rfind(
+                        "\n", current_start, furthest_allowed_position
+                    )
+
                     if one_line != -1:
                         split_end = one_line + 1
                     else:
                         split_end = furthest_allowed_position
-                    chunk = _create_chunk(
-                        original_text,
-                        file_path,
-                        current_start,
-                        split_end,
-                        max_chunk_size,
-                    )
-                    chunks.append(chunk)
-                    current_start = split_end
+                chunk = _create_chunk(
+                    original_text,
+                    file_path,
+                    current_start,
+                    split_end,
+                    max_chunk_size,
+                )
+                chunks.append(chunk)
+                current_start = split_end
             if current_start < section_end:
-                
-                
-            return chunks
+                find_chunk = _create_chunk(
+                    original_text,
+                    file_path,
+                    current_start,
+                    section_end,
+                    max_chunk_size,
+                )
+                chunks.append(find_chunk)
+    return chunks
+
+
+def chunk_python(
+    original_text: str,
+    file_path: str,
+    max_chunk_size: int = 2000,
+) -> List[DocumentChunk]:
+    if max_chunk_size <= 0:
+        raise ValueError("max_chunk_size must be greater than 0.")
+    if not file_path:
+        raise ValueError("file_path must not be empty.")
+    if not original_text:
+        return []
+    try:
+        syntax_tree = ast.parse(original_text)
+    except SyntaxError as se:
+        raise ValueError(f"Unable to parse Python file: {file_path}") from se
+
+    # Each node represents one of these:
+    # FunctionDef is a regular function.
+    # AsyncFunctionDef is an async function.
+    # ClassDef is a class.
+    # syntax_tree.body contains top-level statements in source order.
+
+    definition_nodes: List[
+        ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
+    ] = []
+    for node in syntax_tree.body:
+        if isinstance(
+            node,
+            (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef),
+        ):
+            definition_nodes.append(node)
+
+    line_starts: List[int] = [0]
+    current_position: int = 0
+    lines = original_text.splitlines(keepends=True)
+    for line in lines:
+        current_position += len(line)
+        line_starts.append(current_position)
+    return []
